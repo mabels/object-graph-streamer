@@ -51,7 +51,7 @@ jobs:
         npm ci
         npm install
         npm run build
-        npm run test
+        npm run test:js
         npm publish --otp=$(neckless kv ls --onlyValue "NPM_TOTP@Totp()")
 
     - uses: actions/setup-python@v2

@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run compile",
     "compile": "tsc",
-    "test": "npm run test",
+    "test": "npm run test:js",
     "test:js": "jest",
     "test:go": "go test github.com/mabels/object-graph-streamer",
     "test:python": "python3.9 -m unittest discover -s src -p '*_test.py'"
