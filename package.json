@@ -6,8 +6,10 @@
   "scripts": {
     "build": "npm run compile",
     "compile": "tsc",
-    "test": "jest",
-    "test-python": "python -m unittest discover -s src -p '*_test.py'"
+    "test": "npm run test:js; npm run test:go; npm run test:python",
+    "test:js": "jest",
+    "test:go": "go test github.com/mabels/object-graph-streamer",
+    "test:python": "python3.9 -m unittest discover -s src -p '*_test.py'"
   },
   "homepage": "https://github.com/mabels/object-graph-streamer#readme",
   "author": "Meno Abels",

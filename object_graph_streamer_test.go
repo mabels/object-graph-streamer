@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mabels/object_graph_streamer/mocks"
+	"github.com/mabels/object-graph-streamer/mocks"
 
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/stretchr/testify/assert"

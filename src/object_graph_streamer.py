@@ -1,7 +1,7 @@
-import copy
 from dataclasses import dataclass
 
 import typing
+from enum import Enum
 
 import json
 from datetime import datetime
@@ -16,9 +16,6 @@ class JsonProps:
     def __init__(self, indent=None, newLine=None) -> None:
         self.indent = 0 if indent is None else indent
         self.newLine = "\n" if newLine is None else newLine
-
-
-idGeneratorFN = typing.Callable[[any], None]
 
 
 class ValType:
@@ -79,7 +76,8 @@ class PlainValType(ValType):
 
 
 class OutState(Enum):
-    NONE = "NE",
+    ATTRIBUTE = "Attr"
+    VALUE = "Value"
     ARRAY_START = "[",
     ARRAY_END = "]",
     OBJECT_START = "{",
@@ -90,14 +88,18 @@ class SVal:
     attribute: str
     val: any
     outState: OutState
+    paths: typing.List[str]
 
-    def __init__(self, attribute=None, val=None, outState=None) -> None:
+    def __init__(self, outState, paths, attribute=None, val=None) -> None:
         self.attribute = attribute
         self.val = val
         self.outState = outState
+        self.paths = paths
 
     def to_dict(self):
         ret = {}
+        if self.paths is not None:
+            ret['paths'] = self.paths
         if self.attribute is not None:
             ret['attribute'] = self.attribute
         if self.val is not None:
@@ -199,13 +201,11 @@ class HashCollector:
         return b58encode(self.hash.digest()).decode()
 
     def append(self, sval: SVal):
-        if sval.outState is not None:
-            return
-        if sval.attribute is not None:
+        if sval.outState == OutState.ATTRIBUTE:
             tmp = sval.attribute.encode('utf-8')
             # print("attribute=", tmp)
             self.hash.update(tmp)
-        if sval.val is not None:
+        elif sval.outState == OutState.VALUE:
             out = sval.val.asValue()
             if isinstance(out, datetime):
                 out = jsIsoFormat(out)
@@ -215,32 +215,70 @@ class HashCollector:
             self.hash.update(out.encode("utf-8"))
 
 
-def objectGraphStreamer(e: any, out: typing.Callable[[SVal], None]):
+@dataclass
+class ObjectGraphStreamerProps:
+    paths: typing.Optional[typing.List[str]] = None
+    objectProcessor: typing.Optional[typing.Callable[[
+        typing.List[str]], typing.List[str]]] = None
+    arrayProcessor:  typing.Optional[typing.Callable[[
+        typing.List[any]], typing.List[any]]] = None
+    valFactory: typing.Optional[typing.Callable[[any], ValType]] = None
+
+    def assignPath(self, paths: typing.List[str]):
+        return ObjectGraphStreamerProps(paths=paths,
+                                        objectProcessor=self.objectProcessor,
+                                        arrayProcessor=self.arrayProcessor,
+                                        valFactory=self.valFactory)
+
+
+def defaultObjectGraphStreamerProps(ogsp: typing.Optional[ObjectGraphStreamerProps]) -> ObjectGraphStreamerProps:
+    if ogsp is None:
+        ogsp = ObjectGraphStreamerProps(**{})
+    else:
+        ogsp = ObjectGraphStreamerProps(
+            paths=ogsp.paths,
+            objectProcessor=ogsp.objectProcessor,
+            arrayProcessor=ogsp.arrayProcessor,
+            valFactory=ogsp.valFactory)
+    if not isinstance(ogsp.paths, list):
+        ogsp.paths = []
+    if not callable(ogsp.objectProcessor):
+        def sorter(a):
+            a.sort()
+            return a
+        ogsp.objectProcessor = sorter
+    if not callable(ogsp.arrayProcessor):
+        ogsp.arrayProcessor = lambda a: a
+    if not callable(ogsp.valFactory):
+        ogsp.valFactory = lambda a: JsonValType(a)
+    return ogsp
+
+
+def objectGraphStreamer(e: any, out: typing.Callable[[SVal], None], pogsp: typing.Optional[ObjectGraphStreamerProps] = None):
+    ogsp = defaultObjectGraphStreamerProps(pogsp)
     if isinstance(e, list):
-        out(SVal(**{'outState': OutState.ARRAY_START}))
-        for i in e:
-            objectGraphStreamer(i, out)
-        out(SVal(**{'outState': OutState.ARRAY_END}))
+        arrayPaths = ogsp.paths + ["["]
+        out(SVal(**{'outState': OutState.ARRAY_START, 'paths': arrayPaths}))
+        for idx, i in enumerate(ogsp.arrayProcessor(e)):
+            objectGraphStreamer(
+                i, out, ogsp.assignPath(arrayPaths + [f"{idx}"]))
+        out(SVal(**{'outState': OutState.ARRAY_END,
+            'paths': ogsp.paths + [']']}))
         return
     elif isinstance(e, dict):
-        out(SVal(**{'outState': OutState.OBJECT_START}))
-        keys = list(e.keys())
-        keys.sort()
-        # print("keys=", keys)
-        for i in keys:
-            out(SVal(**{'attribute': i}))
-            objectGraphStreamer(e[i], out)
+        attrPath = ogsp.paths + ['{']
+        out(SVal(**{'outState': OutState.OBJECT_START, 'paths': attrPath}))
+        for i in ogsp.objectProcessor(list(e.keys())):
+            myPath = attrPath + [i]
+            out(SVal(**{'attribute': i, 'paths': myPath,
+                'outState': OutState.ATTRIBUTE}))
+            objectGraphStreamer(e[i], out, ogsp.assignPath(myPath))
 
-        out(SVal(**{'outState': OutState.OBJECT_END}))
+        out(SVal(**{'outState': OutState.OBJECT_END,
+            'paths': ogsp.paths + ['}']}))
         return
     else:
         # print(f"VAL[{e}]")
-        out(SVal(**{'val': JsonValType(e)}))
+        out(SVal(**{'val': JsonValType(e),
+            'outState': OutState.VALUE, 'paths': ogsp.paths}))
         return
-
-
-@dataclass
-class JsonHash:
-    jsonStr: str
-    hash: str
-

@@ -266,39 +266,35 @@ func (j *JsonCollector) Suffix() string {
 }
 
 func (j *JsonCollector) Append(sVal SVal) {
-	if sVal.OutState != NONE {
-		switch sVal.OutState {
-		case ARRAY_START:
-			j.output(fmt.Sprintf("%v%v%v[", j.commas[len(j.commas)-1], j.Suffix(), j.attribute))
-			j.attribute = ""
-			j.commas[len(j.commas)-1] = ","
-			j.commas = append(j.commas, "")
-			j.elements = append(j.elements, 0)
-		case ARRAY_END:
-			j.commas = j.commas[:len(j.commas)-1]
-			j.output(fmt.Sprintf("%v]", j.Suffix()))
-			j.elements = j.elements[:len(j.elements)-1]
-		case OBJECT_START:
-			j.output(fmt.Sprintf("%v%v%v{", j.commas[len(j.commas)-1], j.Suffix(), j.attribute))
-			j.attribute = ""
-			j.commas[len(j.commas)-1] = ","
-			j.commas = append(j.commas, "")
-			j.elements = append(j.elements, 0)
-		case OBJECT_END:
-			j.commas = j.commas[:len(j.commas)-1]
-			j.output(fmt.Sprintf("%v}", j.Suffix()))
-			j.elements = j.elements[:len(j.elements)-1]
-		}
-	}
+	switch sVal.OutState {
+	case ARRAY_START:
+		j.output(fmt.Sprintf("%v%v%v[", j.commas[len(j.commas)-1], j.Suffix(), j.attribute))
+		j.attribute = ""
+		j.commas[len(j.commas)-1] = ","
+		j.commas = append(j.commas, "")
+		j.elements = append(j.elements, 0)
+	case ARRAY_END:
+		j.commas = j.commas[:len(j.commas)-1]
+		j.output(fmt.Sprintf("%v]", j.Suffix()))
+		j.elements = j.elements[:len(j.elements)-1]
+	case OBJECT_START:
+		j.output(fmt.Sprintf("%v%v%v{", j.commas[len(j.commas)-1], j.Suffix(), j.attribute))
+		j.attribute = ""
+		j.commas[len(j.commas)-1] = ","
+		j.commas = append(j.commas, "")
+		j.elements = append(j.elements, 0)
+	case OBJECT_END:
+		j.commas = j.commas[:len(j.commas)-1]
+		j.output(fmt.Sprintf("%v}", j.Suffix()))
+		j.elements = j.elements[:len(j.elements)-1]
 
-	if sVal.Val != nil {
+	case VALUE:
 		j.elements[len(j.elements)-1]++
 		j.output(fmt.Sprintf("%v%v%v%v", j.commas[len(j.commas)-1], j.Suffix(), j.attribute, *sVal.Val.ToString()))
 		j.attribute = ""
 		j.commas[len(j.commas)-1] = ","
-	}
 
-	if sVal.Attribute != "" {
+	case ATTRIBUTE:
 		eidx := len(j.elements)
 		if eidx != 0 {
 			eidx -= 1
@@ -334,17 +330,11 @@ func (h *HashCollector) Digest() string {
 }
 
 func (h *HashCollector) Append(sval SVal) {
-	if sval.OutState != NONE {
-		return
-	}
-
 	// fmt.Println("SVAL", sval)
-	if sval.Attribute != "" {
+	if sval.OutState == ATTRIBUTE {
 		// fmt.Println("ATTRIB", sval.attribute)
 		h.hash.Write([]byte(sval.Attribute))
-	}
-
-	if sval.Val != nil {
+	} else if sval.OutState == VALUE {
 		vl := sval.Val.AsValue()
 		tval, isTime := vl.(time.Time)
 		var t string
