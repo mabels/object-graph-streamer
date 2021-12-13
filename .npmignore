@@ -1,0 +1,19 @@
+# ignore the .ts files
+*.ts
+
+# include the .d.ts files
+!*.d.ts
+
+**/*.go
+**/*.py
+**/*.pyc
+**/*.egg-info
+go.*
+requirements.txt
+*.tgz
+
+.neckless
+.github/
+smoke
+/lang
+tsconfig.json
