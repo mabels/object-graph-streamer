@@ -137,11 +137,6 @@ export class HashCollector {
   }
 }
 
-export interface JsonHash {
-  readonly jsonStr: string;
-  readonly hash?: string;
-}
-
 export function lexicalSort(a: number | string, b: number | string): number {
   if (a < b) {
     return -1;

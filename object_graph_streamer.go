@@ -42,15 +42,15 @@ func (j JsonValType) AsValue() interface{} {
 
 type PlainValType struct {
 	ValType
-	val *string
+	Val *string
 }
 
 func (p PlainValType) ToString() *string {
-	return p.val
+	return p.Val
 }
 
 func (p PlainValType) AsValue() interface{} {
-	return p.val
+	return p.Val
 }
 
 type OutState string
@@ -207,8 +207,8 @@ func ObjectGraphStreamer(e interface{},
 type OutputFN func(str string)
 
 type JsonProps struct {
-	indent  int
-	newline string
+	Indent  int
+	Newline string
 }
 
 func NewJsonProps(nSpaces int, newLine string) *JsonProps {
@@ -217,8 +217,8 @@ func NewJsonProps(nSpaces int, newLine string) *JsonProps {
 		nl = newLine
 	}
 	return &JsonProps{
-		indent:  nSpaces,
-		newline: nl,
+		Indent:  nSpaces,
+		Newline: nl,
 	}
 }
 
@@ -239,13 +239,13 @@ func NewJsonCollector(o OutputFN, p *JsonProps) *JsonCollector {
 	}
 
 	nextLine := ""
-	if props.indent > 0 {
-		nextLine = props.newline
+	if props.Indent > 0 {
+		nextLine = props.Newline
 	}
 
 	return &JsonCollector{
 		output:    o,
-		indent:    strings.Repeat(" ", props.indent),
+		indent:    strings.Repeat(" ", props.Indent),
 		commas:    []string{""},
 		elements:  []int{0},
 		props:     props,
@@ -346,9 +346,4 @@ func (h *HashCollector) Append(sval SVal) {
 		// fmt.Println("VAL", t)
 		h.hash.Write([]byte(t))
 	}
-}
-
-type JsonHash struct {
-	JsonStr *string
-	Hash    *string
 }
