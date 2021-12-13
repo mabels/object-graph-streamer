@@ -58,7 +58,7 @@ jobs:
         python-version: '3.9'
         architecture: 'x64'
 
-    - name: Build PYTHON Envelope
+    - name: Build PYTHON ObjectGraphStreamer
       run: |
         rm -rf ./dist
         python3 --version
@@ -70,14 +70,14 @@ jobs:
       run: |
         cd smoke
         python3 -m venv .
-        bin/pip3 install ../dist/object-graph-streamer-0.0.0_smoke-py3-none-any.whl
+        bin/pip3 install ../dist/object_graph_streamer-0.0.0_smoke-py3-none-any.whl
         bin/python3 smoke.py
 
     - uses: actions/setup-go@v2
       with:
         go-version: '^1.17'
 
-    - name: Build GO Envelope
+    - name: Build GO ObjectGraphStreamer
       run: |
         rm -rf ./dist
         go test github.com/mabels/object-graph-streamer
