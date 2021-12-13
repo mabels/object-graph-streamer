@@ -13,3 +13,12 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+#
+node_modules
+dist
+lang
+src/__init__.py
+src/version.py
+.idea
+**/__pycache__
+**/*egg-info

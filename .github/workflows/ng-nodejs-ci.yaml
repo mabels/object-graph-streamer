@@ -1,0 +1,92 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Build - ObjectGraphStreamer
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    #tags:
+    #  - 'dev'
+    #  - 'prod'
+    branches: [ main ]
+
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+          node-version: ${{ matrix.node-version }}
+
+    - name: Patch Version ${{ env.GITHUB_REF }}
+      run: |
+       node patch-package.json.js "origin/head/0.0.0-smoke"
+       git diff
+
+    - name: Build JS Object Graph Streamer
+      run: |
+        rm -rf ./dist
+        npm ci
+        npm install
+        npm run build
+        npm run test:js
+        npm pack
+
+    - name: Smoke JS
+      run: |
+        cd smoke
+        npm init -y -f
+        npm install ../object-graph-streamer-0.0.0-smoke.tgz 
+        npm install ts-node --global
+        ts-node smoke.ts
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+        architecture: 'x64'
+
+    - name: Build PYTHON Envelope
+      run: |
+        rm -rf ./dist
+        npm run generate-python
+        python3 --version
+        python3 -m pip install --upgrade -r requirements.txt
+        python3 -m unittest discover -s src -p '*_test.py'
+        python3 -m build
+
+    - name: Smoke Python
+      run: |
+        cd smoke
+        python3 -m venv .
+        bin/pip3 install ../dist/object-graph-streamer-0.0.0_smoke-py3-none-any.whl
+        bin/python3 smoke.py
+
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '^1.17'
+
+    - name: Build GO Envelope
+      run: |
+        rm -rf ./dist
+        go test github.com/mabels/object-graph-streamer
+
+    - name: Smoke GO
+      run: |
+        cd smoke
+        go mod init smoke
+        go get github.com/mabels/object-graph-streamer@$(git rev-parse --short=12 HEAD)
+        go run smoke.go
+
