@@ -73,6 +73,7 @@ setuptools.setup(
   author_email='meno.abels@adviser.com',
   setup_requires=[],
   install_requires=[
+      'base58'
   ],
   ext_modules=[],
   packages=['object_graph_streamer'],
