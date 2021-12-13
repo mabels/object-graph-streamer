@@ -1,0 +1,25 @@
+{
+  "name": "object-graph-streamer",
+  "version": "0.0.0-dev",
+  "description": "Object Graph StreamerRepository",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "npm run compile",
+    "compile": "tsc",
+    "test": "jest",
+    "test-python": "python -m unittest discover -s src -p '*_test.py'"
+  },
+  "homepage": "https://github.com/mabels/object-graph-streamer#readme",
+  "author": "Meno Abels",
+  "license": "AFL-2.0",
+  "dependencies": {
+    "base-x": "^3.0.9"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.3",
+    "@types/node": "^16.11.11",
+    "jest": "^27.4.1",
+    "ts-jest": "^27.0.7",
+    "typescript": "^4.5.0"
+  }
+}
